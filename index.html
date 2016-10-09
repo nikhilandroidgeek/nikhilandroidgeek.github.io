@@ -1,0 +1,91 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no">
+  <title>Locate Button</title>
+  <link rel="stylesheet" href="https://js.arcgis.com/3.18/esri/css/esri.css">
+  <style>
+    html, body, #map {
+      padding:0;
+      margin:0;
+      height:100%;
+    }
+    #LocateButton {
+      position: absolute;
+      top: 95px;
+      left: 20px;
+      z-index: 50;
+    }
+  </style>
+  <script src="https://js.arcgis.com/3.18/"></script>
+  <script>
+    var map; 
+var infoTemplate;
+    require([
+      "esri/map", "esri/InfoTemplate","esri/request","esri/geometry/Point","esri/SpatialReference","esri/geometry/webMercatorUtils",
+      "esri/dijit/LocateButton",
+      "dojo/domReady!"
+    ], function(
+      Map,InfoTemplate,esriRequest,Point,SpatialReference,webMercatorUtils,LocateButton
+    )  {
+infoTemplate = new InfoTemplate("Your current Location is");
+      map = new Map("map", {
+        center: [-56.049, 38.485],
+        zoom: 3,
+		logo:false,
+        basemap: "streets"
+      });
+            
+      geoLocate = new LocateButton({
+        map: map,
+		infoTemplate:infoTemplate
+      }, "LocateButton");
+      geoLocate.startup();
+map.on("load",locate);
+
+function locate()
+{
+geoLocate.locate();
+}
+
+geoLocate.on("locate",located);
+
+function located(lo)
+{
+var xy=webMercatorUtils.lngLatToXY(lo.position.coords.longitude,lo.position.coords.latitude);
+console.log(lo.position.coords.longitude,lo.position.coords.latitude);
+console.log(xy);
+var layersRequest = esriRequest({
+    url: "https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/reverseGeocode?outSR=%7B%22wkid%22%3A102100%2C%22latestWkid%22%3A3857%7D&location=%7B%22x%22%3A"+xy[0]+"%2C%22y%22%3A"+xy[1]+"%2C%22spatialReference%22%3A%7B%22wkid%22%3A102100%2C%22latestWkid%22%3A3857%7D%7D&distance=100",
+    content: { f: "json" },
+    handleAs: "json",
+    callbackParamName: "callback"
+  });
+  layersRequest.then(
+    function(response) {
+      
+	  infoTemplate.setContent("Address : "+response.address.Address+"</br>"+"City : "+response.address.City+"</br>"+"Region : "+response.address.Region);
+
+	  
+  }, function(error) {
+      console.log("Error:");
+  });
+}
+    });
+  </script>
+  <!--Start of Zopim Live Chat Script-->
+<script type="text/javascript">
+window.$zopim||(function(d,s){var z=$zopim=function(c){z._.push(c)},$=z.s=
+d.createElement(s),e=d.getElementsByTagName(s)[0];z.set=function(o){z.set.
+_.push(o)};z._=[];z.set._=[];$.async=!0;$.setAttribute("charset","utf-8");
+$.src="//v2.zopim.com/?4HD0TmajKhvmsdQ6HJWcf03ROxXsRb5f";z.t=+new Date;$.
+type="text/javascript";e.parentNode.insertBefore($,e)})(document,"script");
+</script>
+<!--End of Zopim Live Chat Script-->
+<body>
+  <div id="map" class="map">
+    <div id="LocateButton"></div>
+  </div>
+</body>
+</html>
